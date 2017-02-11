@@ -4,18 +4,22 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.Adapter;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 
-import com.facebook.stetho.okhttp3.StethoInterceptor;
+import com.facebook.stetho.okhttp3.*;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.soldiersofmobile.bookscanner.api.BookApi;
 import com.soldiersofmobile.bookscanner.api.model.BooksResponse;
 import com.soldiersofmobile.bookscanner.api.model.VolumeInfo;
+
+import java.lang.reflect.Array;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -42,6 +46,7 @@ public class BookScannerActivity extends AppCompatActivity {
     ListView recentBooksListView;
     @BindView(R.id.activity_main)
     RelativeLayout activityMain;
+    private ArrayAdapter<VolumeInfo> adapter;
 
 
     @Override
@@ -49,7 +54,11 @@ public class BookScannerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_book_scanner);
         ButterKnife.bind(this);
-        isbnEditText.setText("9780132350884"); //TODO remove me, only for tests
+        if(BuildConfig.DEBUG) {
+            isbnEditText.setText("9780132350884"); //TODO remove me, only for tests
+        }
+        adapter =new ArrayAdapter<VolumeInfo>(this,android.R.layout.simple_list_item_1);
+        recentBooksListView.setAdapter(adapter);
     }
 
     public void getDetails() {
@@ -65,13 +74,13 @@ public class BookScannerActivity extends AppCompatActivity {
                     BooksResponse booksResponse = response.body();
                     if (booksResponse.getTotalItems() > 0) {
                         VolumeInfo volumeInfo = booksResponse.getItems().get(0).getVolumeInfo();
-                        //adapter.add(volumeInfo); //TODO prepare Adapter and list to display data
+                        adapter.add(volumeInfo);
 
                         //send VolumeInfo to the BookDetailsActivity
                         //TODO create activity and uncomment this code
-                        //Intent intent = new Intent(BookScannerActivity.this, BookDetailsActivity.class);
-                        //intent.putExtra(VOLUME_INFO_EXTRA, volumeInfo);
-                        //startActivity(intent);
+                        Intent intent = new Intent(BookScannerActivity.this, BookDetailsActivity.class);
+                        intent.putExtra(VOLUME_INFO_EXTRA, volumeInfo);
+                        startActivity(intent);
                     }
                 }
             }
@@ -111,6 +120,18 @@ public class BookScannerActivity extends AppCompatActivity {
             isbnEditText.setText(result.getContents());
         } else {
             super.onActivityResult(requestCode, resultCode, data);
+        }
+    }
+
+    @OnClick({R.id.scan_button, R.id.get_book_details_button})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.scan_button:
+                scan();
+                break;
+            case R.id.get_book_details_button:
+                getDetails();
+                break;
         }
     }
 }
